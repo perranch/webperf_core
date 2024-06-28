@@ -5,7 +5,7 @@ on:
       url:
         description: 'Webpage url to test'
         required: true
-        default: 'https://webperf.se/'
+        default: 'https://sorundanet.se/'
         type: string
       test:
         description: 'Test to run, comma separated list of numbers'
