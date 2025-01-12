@@ -10,6 +10,8 @@ We are currently using local version of [W3C CSS Validation](https://validator.w
 Addition to test all of above sources (compared to only test inline styles that [W3C CSS Validation](https://validator.w3.org/nu/) do) we are also adding support for:
 - Draft CSS properties by using [MDN Web Docs - CSS reference](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference) as guidance.
 - `100%` as valid value of `font-stretch`
+- `@layer` as valid `at-rule`
+- Use of `custom properties` as valid
 - Draft CSS functions by using [MDN Web Docs - CSS reference](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference) as guidance.
 
 ## How are rating being calculated?
@@ -33,8 +35,6 @@ As always, minimum rating are 1.0.
 ### Prerequirements
 
 * Fork this repository
-* As we are using external service ( https://developer.mozilla.org/en-US/docs/Web/CSS/Reference )so the machine running
-this test needs to be able to access external service.
 
 ### Setup with GitHub Actions
 
@@ -43,8 +43,8 @@ Read more on the [general page for github actions](../getting-started-github-act
 ### Setup Locally
 
 * Follow [general local setup steps for this repository](../getting-started-local.md)
-* It is highly recommended to set `cache_when_possible` to `True` and to set `cache_time_delta` to
-* It is highly recommended to set `cache_time_delta` to at least 12 hours (Fail to do so may result in banning of service like github).
+* It is highly recommended to set [general.cache.use](../settings-json.md) to `true`
+* It is highly recommended to set [general.cache.max-age](../settings-json.md) to at least 12 hours (Fail to do so may result in banning of service like github).
 * Depending on your preference, follow below NPM package or Docker image steps below.
 
 * Download and install Java (JDK 8 or above)
@@ -53,8 +53,8 @@ Read more on the [general page for github actions](../getting-started-github-act
 
 * Download and install Node.js (version 20.x)
 * Download and install Google Chrome browser
-* Install NPM packages ( `npm install --production` )
-* Set `sitespeed_use_docker = False` in your `config.py`
+* Install NPM packages ( `npm install --omit=dev` )
+* Set [tests.sitespeed.docker.use](../settings-json.md) to `false` in your `settings.json`
 
 ##### Windows Specific
 
@@ -63,7 +63,7 @@ Read more on the [general page for github actions](../getting-started-github-act
 #### Using Docker image
 
 * Make sure Docker command is globally accessible on your system.
-* Set `sitespeed_use_docker = True` in your `config.py`
+* Set [tests.sitespeed.docker.use](../settings-json.md) to `true` in your `settings.json`
 
 ## FAQ
 

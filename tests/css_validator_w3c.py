@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime
+import json
+import os
+from pathlib import Path
 import re
 import urllib  # https://docs.python.org/3/library/urllib.parse.html
 from bs4 import BeautifulSoup
-from models import Rating
-from tests.utils import get_friendly_url_name, get_http_content,\
-    get_translation, set_cache_file
+from helpers.models import Rating
+from helpers.setting_helper import get_config
+from tests.utils import get_friendly_url_name, get_translation, set_cache_file
 from tests.w3c_base import calculate_rating, get_data_for_url,\
     get_error_review, get_error_types_review,\
     get_errors_for_url, get_rating, get_reviews_from_errors
-from helpers.setting_helper import get_config
 
 # DEFAULTS
 GROUP_ERROR_MSG_REGEX = r"(“[^”]+”)"
@@ -46,7 +48,8 @@ def run_test(global_translation, url):
             'style_element': [],
             'style_attribute': [],
             'style_files': []
-        }
+        },
+        'sources': []
     }
 
     for html_entry in data['htmls']:
@@ -58,6 +61,14 @@ def run_test(global_translation, url):
             result_dict)
         rating += tmp_rating
         all_link_resources.extend(tmp_all_link_resources)
+
+    for resource_url in all_link_resources:
+        for entry in data['all']:
+            if resource_url == entry['url']:
+                result_dict['sources'].append({
+                    'url': resource_url,
+                    'index': entry['index']
+                })
 
     # 4 Check if website inlcuded css files in other ways
     for link_resource in all_link_resources:
@@ -123,8 +134,10 @@ def handle_html_markup_entry(entry, global_translation, url, local_translation, 
                 local_translation,
                 f'- `style=""` in: {name}')
 
-        # 2.3 GET ERRORS FROM SERVICE
-        # 2.4 CALCULATE SCORE
+    if 'has_style_elements' in result_dict or\
+            'has_style_attributes' in result_dict:
+        all_link_resources.append(req_url)
+
         # 3 FIND ALL <LINK> (rel=\"stylesheet\")
     (link_resources, errors) = get_errors_for_link_tags(html, url)
     if len(link_resources) > 0:
@@ -157,6 +170,10 @@ def rate_css(global_translation, local_translation, data, result_dict):
     errors = []
     for data_resource_info in data['resources']:
         has_css_contenttypes = True
+        result_dict['sources'].append({
+            'url': data_resource_info['url'],
+            'index': data_resource_info['index']
+        })
         errors += get_errors_for_url(
             'css',
             data_resource_info['url'])
@@ -387,6 +404,17 @@ def get_errors_for_link_tags(html, url):
             if resource_url.startswith('//'):
                 # do nothing, complete url
                 resource_url = parsed_url_scheme + ':' + resource_url
+            elif resource_url.startswith('../'):
+                # relative url, complement with dns
+                test_url = o.path
+                while resource_url.startswith('../'):
+                    rindex = test_url.rfind('/')
+                    test_url = f'{test_url[:rindex]}'
+                    rindex = test_url.rfind('/')
+                    test_url = f'{test_url[:rindex]}'
+
+                    resource_url = resource_url.lstrip('../')
+                resource_url = parsed_url + test_url + '/' + resource_url
             elif resource_url.startswith('/'):
                 # relative url, complement with dns
                 resource_url = parsed_url + resource_url
@@ -437,8 +465,11 @@ def get_errors_for_style_attributes(url, html):
     results = []
     temp_attribute_css = ''
 
+    # Lets use temp index to make every rule unique
+    index = 0
     for element in elements:
-        temp_attribute_css += '' + f"{element.name}{{{element['style']}}}"
+        temp_attribute_css += '' + f"{element.name}.temp-index-{index}{{{element['style']}}}"
+        index += 1
 
     if temp_attribute_css != '':
         tmp_url = f'{url}#styles-attributes'
@@ -486,41 +517,26 @@ def get_errors_for_style_tags(url, html):
 
     return (elements, results)
 
+
 def get_mdn_web_docs_css_features():
-    """
-    Returns a tuple containing 2 lists, first one of CSS features and
-    second of CSS functions keys formatted as non-existent properties.
-    """
-    features = {}
-    functions = {}
+    base_directory = Path(os.path.dirname(
+        os.path.realpath(__file__)) + os.path.sep).parent
 
-    html = get_http_content(
-        'https://developer.mozilla.org/en-US/docs/Web/CSS/Reference')
+    file_path = os.path.join(base_directory, 'defaults', 'mdn-rules.json')
+    if not os.path.isfile(file_path):
+        print(f"ERROR: No {file_path} file found!")
+        return ({}, {})
 
-    soup = BeautifulSoup(html, 'lxml')
+    with open(file_path) as json_rules_file:
+        rules = json.load(json_rules_file)
+        css_rules = rules['css']
 
-    index_element = soup.find('div', class_='index')
-    if index_element:
-        links = index_element.find_all('a')
-        for link in links:
-            regex = r'(?P<name>[a-z\-0-9]+)(?P<func>[()]{0,2})[ ]*'
-            matches = re.search(regex, link.string)
-            if matches:
-                property_name = matches.group('name')
-                is_function = matches.group('func') in '()'
-                if is_function:
-                    functions[f"{property_name}"] = link.get('href')
-                else:
-                    features[f"{property_name}"] = link.get('href')
-    else:
-        print('no index element found')
-    return (features, functions)
+        return (css_rules['features'], css_rules['functions'])
 
 # TODO: change this to just in time, right now it is called every time webperf_core is being called.
 css_spec = get_mdn_web_docs_css_features()
 css_features = css_spec[0]
 css_functions = css_spec[1]
-
 
 def get_properties_doesnt_exist_list():
     """
@@ -562,6 +578,7 @@ def create_review_and_rating(errors, global_translation, local_translation, revi
     whitelisted_words = css_properties_doesnt_exist
 
     whitelisted_words.append('“100%” is not a “font-stretch” value')
+    whitelisted_words.append('CSS: Unrecognized at-rule “@layer”')
     whitelisted_words.extend(css_functions_no_support)
 
     number_of_errors = len(errors)
@@ -626,4 +643,9 @@ def error_has_whitelisted_wording(error_message, whitelisted_words):
         if whitelisted_word in error_message:
             in_whitelisted = True
             break
+
+    property_regex = r"CSS\: “\-\-[^”]+”\: Parse Error\."
+    if re.search(property_regex, error_message, re.MULTILINE) is not None:
+        in_whitelisted = True
+
     return in_whitelisted

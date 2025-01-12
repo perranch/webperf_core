@@ -11,7 +11,7 @@ from PIL.ExifTags import TAGS
 from PIL import Image
 # https://docs.python.org/3/library/urllib.parse.html
 import packaging.version
-from models import Rating, DefaultInfo
+from helpers.models import Rating, DefaultInfo
 from tests.sitespeed_base import get_result
 from tests.utils import get_http_content, get_translation, is_file_older_than
 from helpers.setting_helper import get_config
@@ -90,10 +90,8 @@ def get_rating_from_sitespeed(url, local_translation, global_translation):
 
     sitespeed_arg = f'--shm-size=1g {sitespeed_arg}'
 
-    if not ('nt' in os.name or 'Darwin' in os.uname().sysname):
+    if get_config('tests.sitespeed.xvfb'):
         sitespeed_arg += ' --xvfb'
-
-    sitespeed_arg += ' --postScript chrome-cookies.cjs --postScript chrome-versions.cjs'
 
     (result_folder_name, filename) = get_result(
         url,
@@ -605,7 +603,7 @@ def get_softwares():
 
     file_path = f'{base_directory}{os.path.sep}data{os.path.sep}software-full.json'
     if not os.path.isfile(file_path):
-        file_path = f'{base_directory}{os.path.sep}software-full.json'
+        file_path = f'{base_directory}{os.path.sep}defaults{os.path.sep}software-full.json'
     if not os.path.isfile(file_path):
         print("ERROR: No software-full.json file found!")
         return {
@@ -623,7 +621,7 @@ def add_known_software_source(name, source_type, match, url):
 
     file_path = f'{base_directory}{os.path.sep}data{os.path.sep}software-sources.json'
     if not os.path.isfile(file_path):
-        file_path = f'{base_directory}{os.path.sep}software-sources.json'
+        file_path = f'{base_directory}{os.path.sep}defaults{os.path.sep}software-sources.json'
     if not os.path.isfile(file_path):
         print("ERROR: No software-sources.json file found!")
         return
@@ -1095,8 +1093,11 @@ def identify_software(filename, origin_domain, rules):
         if 'log' in har_data:
             har_data = har_data['log']
 
-        if 'software' in har_data:
+        if '_software' in har_data:
+            global_software = har_data['_software']
+        elif 'software' in har_data:
             global_software = har_data['software']
+
         if 'cookies' in har_data:
             global_cookies = har_data['cookies']
 

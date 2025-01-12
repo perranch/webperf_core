@@ -6,7 +6,7 @@ import re
 # https://docs.python.org/3/library/urllib.parse.html
 from urllib.parse import urlparse
 from datetime import datetime, timedelta, date
-from models import Rating
+from helpers.models import Rating
 from tests.utils import get_best_country_code, get_friendly_url_name,\
     get_translation, is_country_code_in_eu_or_on_exception_list
 from tests.sitespeed_base import get_result
@@ -767,10 +767,8 @@ def get_rating_from_sitespeed(url, local_translation, global_translation):
 
     sitespeed_arg = '--shm-size=1g -b chrome --plugins.remove screenshot --plugins.remove html --plugins.remove metrics --browsertime.screenshot false --screenshot false --screenshotLCP false --browsertime.screenshotLCP false --chrome.cdp.performance false --browsertime.chrome.timeline false --videoParams.createFilmstrip false --visualMetrics false --visualMetricsPerceptual false --visualMetricsContentful false --browsertime.headless true --browsertime.chrome.includeResponseBodies all --utc true --browsertime.chrome.args ignore-certificate-errors -n {0}'.format(
         sitespeed_iterations)
-    if not ('nt' in os.name or 'Darwin' in os.uname().sysname):
+    if get_config('tests.sitespeed.xvfb'):
         sitespeed_arg += ' --xvfb'
-
-    sitespeed_arg += ' --postScript chrome-cookies.cjs --postScript chrome-versions.cjs'
 
     (result_folder_name, filename) = get_result(
         url,

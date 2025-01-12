@@ -105,7 +105,14 @@ def get_cached_result(url, hostname):
 
     filename = ''
     result_folder_name = ''
-    sites = sitespeed_cache.read_sites(hostname, -1, -1)
+    sites = []
+
+    custom_cache_folder = get_config('tests.sitespeed.cache.folder')
+    if custom_cache_folder:
+        sites = sitespeed_cache.read_sites_from_directory(custom_cache_folder, hostname, -1, -1)
+    else:
+        sites = sitespeed_cache.read_sites(hostname, -1, -1)
+
     for site in sites:
         if url == site[1] or url2 == site[1]:
             filename = site[0]
@@ -153,13 +160,27 @@ def get_cookies(test):
         dict: A dictionary containing the cookies.
     """
     regex = r"COOKIES:START: {\"cookies\":(?P<COOKIES>.+)} COOKIES:END"
-    cookies = '{}'
+    raw = '{}'
     matches = re.finditer(
         regex, test, re.MULTILINE)
     for _, match in enumerate(matches, start=1):
-        cookies = match.group('COOKIES')
-    cookies_json = json.loads(cookies)
-    return cookies_json
+        raw = match.group('COOKIES')
+    json_data = json.loads(raw)
+
+    cookies = []
+    for item_json in json_data:
+        cookie = {}
+        for key, value in item_json.items():
+            if key in ('name', 'value', 'domain', 'path', 'httpOnly', 'secure'):
+                cookie[key] = value
+            elif key in ('expires'):
+                if value != -1:
+                    cookie[key] = value
+            else:
+                cookie[f'_{key}'] = value
+        cookies.append(cookie)
+
+    return cookies
 
 
 def cleanup_results_dir(browsertime_path, path):
@@ -308,7 +329,7 @@ def modify_browsertime_content(input_filename, cookies, versions):
     # add cookies
     json_result['log']['cookies'] = cookies
     # add software name and versions
-    json_result['log']['software'] = versions
+    json_result['log']['_software'] = versions
 
     if 'version' in json_result['log']:
         del json_result['log']['version']
@@ -320,9 +341,15 @@ def modify_browsertime_content(input_filename, cookies, versions):
         del json_result['log']['creator']
         has_minified = True
     if 'pages' in json_result['log']:
-        has_minified = False
         for page in json_result['log']['pages']:
             keys_to_remove = []
+
+            # NOTE: Fix for inconsistancy in sitespeed handling of not being able to access webpage
+            # For some reason it will sometime not add _url field but add url in title field (See TLSv1.0 and TLSv1.1 testing)
+            if 'id' in page and 'failing_page' == page['id'] and '_url' not in page and 'title' in page:
+                page['_url'] = page['title']
+                has_minified = True
+
             for key in page.keys():
                 if key != '_url':
                     keys_to_remove.append(key)
@@ -330,14 +357,13 @@ def modify_browsertime_content(input_filename, cookies, versions):
                 del page[key]
                 has_minified = True
     if 'entries' in json_result['log']:
-        has_minified = False
         for entry in json_result['log']['entries']:
-            has_minified = modify_browertime_content_entity(entry)
+            has_minified = modify_browertime_content_entity(entry) or has_minified
 
     if has_minified:
         write_json(input_filename, json_result)
 
-    return result
+    return json_result
 
 def modify_browertime_content_entity(entry):
     """

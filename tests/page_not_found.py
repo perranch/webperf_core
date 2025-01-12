@@ -5,7 +5,7 @@ from urllib.parse import ParseResult, urlunparse
 from datetime import datetime
 import urllib  # https://docs.python.org/3/library/urllib.parse.html
 from bs4 import BeautifulSoup
-from models import Rating
+from helpers.models import Rating
 from tests.utils import get_guid,\
     get_http_content, get_translation
 from tests.sitespeed_base import get_result
@@ -65,10 +65,8 @@ def get_http_content_with_status(url):
             '--browsertime.chrome.includeResponseBodies all --utc true '
             '--browsertime.chrome.args ignore-certificate-errors '
             f'-n {sitespeed_iterations}')
-    if not ('nt' in os.name or 'Darwin' in os.uname().sysname):
+    if get_config('tests.sitespeed.xvfb'):
         sitespeed_arg += ' --xvfb'
-
-    sitespeed_arg += ' --postScript chrome-cookies.cjs --postScript chrome-versions.cjs'
 
     (_, filename) = get_result(
         url,
@@ -166,7 +164,10 @@ def run_test(global_translation, org_url):
     print(global_translation('TEXT_TEST_START').format(
         datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
 
-    url = change_url_to_404_url(org_url)
+    if get_config('tests.page-not-found.override-url'):
+        url = change_url_to_404_url(org_url)
+    else:
+        url = org_url
 
     # checks http status code and content for url
     request_text, code = get_http_content_with_status(url)

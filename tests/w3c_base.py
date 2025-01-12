@@ -3,7 +3,7 @@ from datetime import timedelta
 import os
 import subprocess
 import json
-from models import Rating
+from helpers.models import Rating
 from tests.sitespeed_base import get_result
 from tests.utils import get_cache_path_for_file,\
                         has_cache_file,\
@@ -78,6 +78,11 @@ def get_errors(test_type, params):
         if 'messages' in json_result:
             errors = json_result['messages']
 
+    for error in errors:
+        if 'url' in error and get_config('general.cache.use'):
+            error['file'] = error['url']
+        error['url'] = url
+
     return errors
 
 def get_data_for_url(url):
@@ -108,10 +113,8 @@ def get_data_for_url(url):
             '--browsertime.chrome.includeResponseBodies all --utc true '
             '--browsertime.chrome.args ignore-certificate-errors '
             f'-n {sitespeed_iterations}')
-    if not ('nt' in os.name or 'Darwin' in os.uname().sysname):
+    if get_config('tests.sitespeed.xvfb'):
         sitespeed_arg += ' --xvfb'
-
-    sitespeed_arg += ' --postScript chrome-cookies.cjs --postScript chrome-versions.cjs'
 
     (_, filename) = get_result(
         url,
@@ -146,6 +149,7 @@ def identify_files(filename):
     """
 
     data = {
+        'all': [],
         'htmls': [],
         'elements': [],
         'attributes': [],
@@ -182,22 +186,26 @@ def identify_files(filename):
                         True,
                         timedelta(minutes=get_config('general.cache.max-age'))):
                     set_cache_file(req_url, res['content']['text'], True)
-                data['htmls'].append({
+                obj = {
                     'url': req_url,
                     'content': res['content']['text'],
                     'index': req_index
-                    })
+                    }
+                data['all'].append(obj)
+                data['htmls'].append(obj)
             elif 'css' in res['content']['mimeType']:
                 if not has_cache_file(
                         req_url,
                         True,
                         timedelta(minutes=get_config('general.cache.max-age'))):
                     set_cache_file(req_url, res['content']['text'], True)
-                data['resources'].append({
+                obj = {
                     'url': req_url,
                     'content': res['content']['text'],
                     'index': req_index
-                    })
+                    }
+                data['all'].append(obj)
+                data['resources'].append(obj)
             req_index += 1
 
     return data

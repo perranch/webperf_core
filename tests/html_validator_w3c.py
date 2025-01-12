@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime
+import json
+import os
+from pathlib import Path
 import re
-from models import Rating
-from tests.utils import get_friendly_url_name,\
-    get_translation,\
+from helpers.models import Rating
+from tests.utils import get_friendly_url_name, get_translation,\
     set_cache_file
 from tests.w3c_base import calculate_rating, get_data_for_url,\
     get_error_review, get_error_types_review,\
@@ -11,7 +13,6 @@ from tests.w3c_base import calculate_rating, get_data_for_url,\
 from helpers.setting_helper import get_config
 
 # DEFAULTS
-HTML_REVIEW_GROUP_ERRORS = True
 HTML_START_STRINGS = [
         'Start tag seen without seeing a doctype first. Expected “<!DOCTYPE html>”',
         'Element “head” is missing a required instance of child element “title”.'
@@ -40,7 +41,8 @@ def run_test(global_translation, url):
         'errors': {
             'all': [],
             'html_files': []
-        }
+        },
+        'sources': []
     }
 
     for html_entry in data['htmls']:
@@ -50,6 +52,9 @@ def run_test(global_translation, url):
             local_translation,
             result_dict)
         rating += tmp_rating
+        if 'content' in html_entry and html_entry['content'] != '':
+            del html_entry['content']
+            result_dict['sources'].append(html_entry)
 
     number_of_errors = len(result_dict['errors']['html_files'])
     points = rating.get_overall()
@@ -97,7 +102,7 @@ def handle_html_markup_entry(entry, global_translation, local_translation, resul
     req_url = entry['url']
     name = get_friendly_url_name(global_translation, req_url, entry['index'])
     html = entry['content']
-    errors = get_errors_for_html(req_url, html)
+    errors = get_errors_for_html(req_url, html, local_translation)
     result_dict['errors']['all'].extend(errors)
     result_dict['errors']['html_files'].extend(errors)
     is_first_entry = entry['index'] <= 1
@@ -153,7 +158,7 @@ def create_review_and_rating(
 
             tmp = re.sub(
                 r"(“[^”]+”)", "X", error_message, 0, re.MULTILINE)
-            if HTML_REVIEW_GROUP_ERRORS:
+            if not get_config('general.review.details'):
                 error_message = tmp
 
             if msg_grouped_dict.get(error_message, False):
@@ -197,7 +202,32 @@ def is_start_html_error(error_message):
             return True
     return False
 
-def get_errors_for_html(url, html):
+def get_mdn_web_docs_deprecated_elements():
+    """
+    Returns a list of strings, of deprecated html elements.
+    """
+
+    base_directory = Path(os.path.dirname(
+        os.path.realpath(__file__)) + os.path.sep).parent
+
+    file_path = os.path.join(base_directory, 'defaults', 'mdn-rules.json')
+    if not os.path.isfile(file_path):
+        print(f"ERROR: No {file_path} file found!")
+        return ({}, {})
+
+    with open(file_path) as json_rules_file:
+        rules = json.load(json_rules_file)
+        html_rules = rules['html']
+        elements = html_rules['deprecated']['elements']
+
+        return elements
+
+
+# TODO: change this to just in time, right now it is called every time webperf_core is being called.
+html_deprecated_elements = get_mdn_web_docs_deprecated_elements()
+
+
+def get_errors_for_html(url, html, local_translation):
     """
     Caches the HTML content of a URL and retrieves the errors associated with it.
 
@@ -212,4 +242,15 @@ def get_errors_for_html(url, html):
     results = get_errors_for_url(
         'html',
         url)
+
+    for element in html_deprecated_elements:
+        if element not in html:
+            continue
+        results.append({
+                'type': 'error',
+                'message': local_translation(
+                    'TEXT_REVIEW_DEPRECATED_ELEMENT'
+                    ).format(element.replace('<', ''))
+            })
+
     return results

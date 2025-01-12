@@ -57,6 +57,12 @@ Example in the following tests:
 Setting this variable to true will result in showing review(s) in terminal.
 It is for example good when you want to run a fast test without using output file.
 
+### general.review.data `(Default = false)`
+
+Include data as JSON when showing review(s) in terminal.
+It is for example good when you want to run a fast test without using output file.
+
+
 ### general.review.details `(Default = false)`
 
 Setting this variable to true will result showing a more detailed review when available.
@@ -117,6 +123,38 @@ Tells email test if it should do a operation over ipv6 also in email test (GitHu
 
 Tells HTTP test to ignore everything except the CSP subtest in the HTTP test (great if you run it against sitemap to get CSP recommendation)
 
+### tests.http.csp-generate-hashes `(Default = false)`
+
+Tells HTTP test to download resources one more time after visiting website to generate sha256 hashes
+for as many resources as possible. (great if you want to have a fast list of sha256 hashed you can use)
+This result in a different CSP recommendation than default as default CSP recommendation only takes in consider text based resources.
+
+### tests.http.csp-generate-strict-recommended-hashes `(Default = false)`
+
+Tells HTTP test to download resources one more time after visiting website to generate sha256 hashes
+for resource types commonly not as content dependent. (great if you run it against sitemap to get CSP recommendation)
+This result in a different CSP recommendation than default as default CSP recommendation only takes in consider text based resources.
+
+### tests.http.csp-generate-css-hashes `(Default = false)`
+
+Tells HTTP test to only download css resources one more time after visiting website to generate sha256 hashes.
+Please also see csp-generate-strict-recommended-hashes and tests.http.csp-generate-hashes.
+
+### tests.http.csp-generate-font-hashes `(Default = false)`
+
+Tells HTTP test to only download font resources one more time after visiting website to generate sha256 hashes.
+Please also see csp-generate-strict-recommended-hashes and tests.http.csp-generate-hashes.
+
+### tests.http.csp-generate-img-hashes `(Default = false)`
+
+Tells HTTP test to only download image resources one more time after visiting website to generate sha256 hashes.
+Please also see csp-generate-strict-recommended-hashes and tests.http.csp-generate-hashes.
+
+### tests.http.csp-generate-js-hashes `(Default = false)`
+
+Tells HTTP test to only download javascript resources one more time after visiting website to generate sha256 hashes.
+Please also see csp-generate-strict-recommended-hashes and tests.http.csp-generate-hashes.
+
 ### tests.lighthouse.disable-sandbox `(Default = false)`
 
 This variable tells lighthouse based test(s) to disable chrome sandbox or not.
@@ -127,6 +165,11 @@ This is needed when using it in our docker image (IF not used in interactive mod
 This variable tells sitespeed based test(s) to use docker image version instead of NPM version.
 Please read more about this on [SiteSpeed test section](tests/sitespeed.md).
 
+### tests.sitespeed.iterations `(Default = 2)`
+
+This variable tells sitespeed based test(s) how many iterations it should do against the url to get the best measurement.
+Please read more about this on [SiteSpeed test section](tests/sitespeed.md).
+
 ### tests.sitespeed.timeout `(Default = 300 ms)`
 
 This variable tells sitespeed based test(s) how long it should wait for a url to load.
@@ -134,10 +177,10 @@ Setting this to a lower value may improve overall test speed if many urls are be
 it is not important if one or two tests fail.
 Please read more about this on [SiteSpeed test section](tests/sitespeed.md).
 
-### tests.sitespeed.iterations `(Default = 2)`
+### tests.sitespeed.xvfb `(Default = false)`
 
-This variable tells sitespeed based test(s) how many iterations it should do against the url to get the best measurement.
-Please read more about this on [SiteSpeed test section](tests/sitespeed.md).
+This variable tells sitespeed based test(s) to start xvfb before the browser is started.
+This is only relevant for linux based os.
 
 ### test.software.advisory.path `(Default = "")`
 This variable is ONLY used to generate a CVE and security related info for software.

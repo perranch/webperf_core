@@ -18,7 +18,7 @@ jobs:
     - name: Setup python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.x' # Version range or exact version of a Python version to use, using SemVer's version range syntax
+        python-version: '3.13' # Version range or exact version of a Python version to use, using SemVer's version range syntax
         architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
     - name: Setup dependencies using pip
       run: pip install -r requirements.txt
@@ -42,9 +42,10 @@ jobs:
         sudo apt-get --only-upgrade install google-chrome-stable
         google-chrome --version
     - name: Setup npm packages
-      run: npm install --production
+      run: npm install --omit=dev
+      timeout-minutes: 30
     - name: Update USER_AGENT in our defaults/settings.json
-      run: python update_software.py -b
+      run: python default.py --update-browser
     - name: Checkout advisory-database repo
       uses: actions/checkout@v4
       with:
@@ -55,9 +56,13 @@ jobs:
         sparse-checkout: |
           advisories
     - name: Verifing Software(s)
-      run: python update_software.py -d ${{ secrets.GITHUB_TOKEN }}
+      run: python default.py --update-definitions ${{ secrets.GITHUB_TOKEN }}
+    - name: Update HTML and CSS references (MDN Web Docs)
+      run: python default.py --update-mdn-sources
+    - name: Update CREDITS.md
+      run: python default.py --update-credits
     - name: Create pull request
-      uses: peter-evans/create-pull-request@v6
+      uses: peter-evans/create-pull-request@v7
       with:
         commit-message: Update software and license definitions
         branch: software-definition-updates
@@ -66,14 +71,18 @@ jobs:
           This pull request is used to make it easier to keep the software definitions up to date.
           
           Following files may be touched:
-            - software-sources.json
-            - software-full.json
+            - defaults/software-sources.json
+            - defaults/software-full.json
             - defaults/software-rules.json
             - defaults/settings.json
+            - defaults/mdn-rules.json
+            - CREDITS.md
         assignees: 7h3Rabbit
         reviewers: 7h3Rabbit
         add-paths: |
-          software-sources.json
-          software-full.json
+          defaults/software-sources.json
+          defaults/software-full.json
           defaults/software-rules.json
           defaults/settings.json
+          defaults/mdn-rules.json
+          CREDITS.md

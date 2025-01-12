@@ -13,9 +13,10 @@ import dns.rdatatype
 from helpers.csp_helper import rate_csp
 from helpers.data_helper import append_domain_entry, has_domain_entry
 from helpers.sitespeed_helper import get_data_from_sitespeed
+from helpers.sri_helper import rate_sri
 from helpers.tls_helper import rate_transfer_layers
 from helpers.setting_helper import get_config
-from models import Rating
+from helpers.models import Rating
 from tests.utils import change_url_to_test_url, dns_lookup,\
     get_translation, merge_dicts
 from tests.sitespeed_base import get_result
@@ -306,6 +307,13 @@ def rate(org_domain, result_dict, global_translation, local_translation):
             org_www_domain,
             domain,
             should_create_recommendation)
+        rating += rate_sri(
+            result_dict,
+            global_translation,
+            local_translation,
+            org_domain,
+            org_www_domain,
+            domain)
 
     return rating
 
@@ -842,7 +850,7 @@ def get_website_support_from_sitespeed(url, org_domain, configuration, browser, 
 
     sitespeed_arg = f'--shm-size=1g {sitespeed_arg}'
 
-    if not ('nt' in os.name or 'Darwin' in os.uname().sysname):
+    if get_config('tests.sitespeed.xvfb'):
         sitespeed_arg += ' --xvfb'
 
     (_, filename) = get_result(

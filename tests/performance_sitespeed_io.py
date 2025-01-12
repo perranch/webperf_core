@@ -5,7 +5,7 @@ import os
 import re
 import subprocess
 from datetime import datetime
-from models import Rating
+from helpers.models import Rating
 from tests.utils import get_dependency_version, get_translation
 from helpers.setting_helper import get_config
 
@@ -208,7 +208,7 @@ def validate_on_mobile_using_validator(url, validator_config):
         f'{url}'
         f'{browertime_plugin_options}'
         )
-    if not ('nt' in os.name or 'Darwin' in os.uname().sysname):
+    if get_config('tests.sitespeed.xvfb'):
         arg = '--xvfb ' + arg
 
     result_dict = get_result_dict(get_result(arg), validator_config['name'])
@@ -283,7 +283,7 @@ def validate_on_desktop_using_validator(url, validator_config):
         f'{url}'
         f'{browertime_plugin_options}'
         )
-    if not ('nt' in os.name or 'Darwin' in os.uname().sysname):
+    if get_config('tests.sitespeed.xvfb'):
         arg = '--xvfb ' + arg
 
     result_dict = get_result_dict(get_result(arg), validator_config['name'])
@@ -316,7 +316,7 @@ def validate_on_desktop(url):
         '--preScript chrome-custom.cjs '
         f'{url}'
         )
-    if not ('nt' in os.name or 'Darwin' in os.uname().sysname):
+    if get_config('tests.sitespeed.xvfb'):
         arg = '--xvfb ' + arg
 
     result_dict = get_result_dict(get_result(arg), 'desktop')
@@ -348,7 +348,7 @@ def validate_on_mobile(url):
         '--preScript chrome-custom.cjs '
         f'{url}'
         )
-    if not ('nt' in os.name or 'Darwin' in os.uname().sysname):
+    if get_config('tests.sitespeed.xvfb'):
         arg = '--xvfb ' + arg
 
     result_dict = get_result_dict(get_result(arg), 'mobile')
