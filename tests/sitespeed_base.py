@@ -10,7 +10,8 @@ import shutil
 import urllib
 from urllib.parse import ParseResult, urlparse, urlunparse
 import uuid
-from tests.utils import get_dependency_version, is_file_older_than
+from tests.utils import change_url_to_test_url,\
+    get_dependency_version, is_file_older_than
 import engines.sitespeed_result as sitespeed_cache
 from helpers.setting_helper import get_config
 
@@ -53,12 +54,16 @@ def get_result(url, sitespeed_use_docker, sitespeed_arg, timeout):
     """
     folder = 'tmp'
     if get_config('general.cache.use'):
-        folder = 'cache'
+        folder = get_config('general.cache.folder')
 
     o = urlparse(url)
     hostname = o.hostname
 
     result_folder_name = os.path.join(folder, hostname, f'{str(uuid.uuid4())}')
+
+    if get_config('tests.sitespeed.mobile'):
+        url = change_url_to_test_url(url, 'mobile')
+        sitespeed_arg += (' --mobile')
 
     sitespeed_arg += (' --postScript chrome-cookies.cjs --postScript chrome-versions.cjs '
                       f'--outputFolder {result_folder_name} {url}')
@@ -105,13 +110,7 @@ def get_cached_result(url, hostname):
 
     filename = ''
     result_folder_name = ''
-    sites = []
-
-    custom_cache_folder = get_config('tests.sitespeed.cache.folder')
-    if custom_cache_folder:
-        sites = sitespeed_cache.read_sites_from_directory(custom_cache_folder, hostname, -1, -1)
-    else:
-        sites = sitespeed_cache.read_sites(hostname, -1, -1)
+    sites = sitespeed_cache.read_sites(hostname, -1, -1)
 
     for site in sites:
         if url == site[1] or url2 == site[1]:
@@ -193,7 +192,21 @@ def cleanup_results_dir(browsertime_path, path):
         path (str): The path to the directory to be removed.
     """
     correct_path = f'{path}.har'
-    os.rename(browsertime_path, correct_path)
+    coach_path = browsertime_path.replace('browsertime.har', 'coach.json')
+    correct_coach_path = f'{path}-coach.json'
+    sustainable_path = browsertime_path.replace('browsertime.har', 'sustainable.json')
+    correct_sustainable_path = f'{path}-sustainable.json'
+    lighthouse_path = browsertime_path.replace('browsertime.har', 'lighthouse-lhr.json')
+    correct_lighthouse_path = f'{path}-lighthouse-lhr.json'
+
+    if os.path.exists(browsertime_path):
+        os.rename(browsertime_path, correct_path)
+    if os.path.exists(coach_path):
+        os.rename(coach_path, correct_coach_path)
+    if os.path.exists(sustainable_path):
+        os.rename(sustainable_path, correct_sustainable_path)
+    if os.path.exists(lighthouse_path):
+        os.rename(lighthouse_path, correct_lighthouse_path)
     shutil.rmtree(path)
 
 def get_result_using_no_cache(sitespeed_use_docker, arg, timeout):

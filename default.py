@@ -29,6 +29,7 @@ from helpers.test_helper import TEST_ALL,\
 from helpers.translation_helper import validate_translations
 from helpers.update_software_helper import filter_unknown_sources,\
     update_licenses, update_software_info, update_user_agent
+from helpers.update_stylelint_helper import update_stylelint_rules
 from tests.utils import clean_cache_files
 
 def show_test_help(global_translation):
@@ -104,6 +105,10 @@ class CommandLineOptions: # pylint: disable=too-many-instance-attributes,missing
         """
         update_credits_markdown(self.language)
         sys.exit()
+
+    def update_stylelint(self, _):
+        update_stylelint_rules()
+        sys.exit(0)
 
     def update_browser(self, _):
         update_user_agent()
@@ -329,6 +334,9 @@ class CommandLineOptions: # pylint: disable=too-many-instance-attributes,missing
         if len(self.test_types) == 0:
             show_test_help(self.language)
 
+    def enable_mobile(self, _):
+        self.set_setting('tests.sitespeed.mobile=true')
+
     def enable_reviews(self, _):
         """
         Enables the display of reviews for the instance.
@@ -465,12 +473,14 @@ class CommandLineOptions: # pylint: disable=too-many-instance-attributes,missing
             ("-t", "--test"): self.set_test_types,
             ("-i", "--input"): self.set_input_handlers,
             ("--is", "--input-skip"): self.set_input_skip,
+            ("-m", "--mobile"): self.enable_mobile,
             ("--it", "--input-take"): self.set_input_take,
             ("-o", "--output"): self.set_output_filename,
             ("-r", "--review", "--report"): self.enable_reviews,
             ("-c", "--credits", "--contributors"): self.show_credits,
             ("--uc", "--update-credits"): self.update_credits,
             ("-b", "--update-browser"): self.update_browser,
+            ("--usr", "--update-stylelint-rules"): self.update_stylelint,
             ("-d", "--update-definitions"): self.update_software_definitions,
             ("--ums", "--update-mdn-sources"): self.update_mdn,
             ("--ucr", "--update-carbon"): self.update_carbon_rating,
@@ -517,14 +527,16 @@ def main(argv):
     options.load_language(get_config('general.language'))
 
     try:
-        opts, _ = getopt.getopt(argv, "hu:t:i:o:rA:D:L:s:cbd:", [
+        opts, _ = getopt.getopt(argv, "hu:t:i:o:rA:D:L:s:cbd:m", [
                                    "help", "url=", "test=", "input=", "output=",
                                    "review", "report", "addUrl=", "deleteUrl=",
                                    "language=", "input-skip=", "input-take=",
+                                   "mobile",
                                    "credits", "contributors",
                                    "uc" ,"update-credits",
                                    "ums", "update-mdn-sources",
                                    "update-browser", "update-definitions=",
+                                   "usr", "update-stylelint-rules",
                                    "update-translations",
                                    "pr=", "prepare-release=",
                                    "cr=", "create-release=",

@@ -90,6 +90,11 @@ resulting in less requests and strain on the url you are testing.
 
 See `general.cache.max-age` setting to determine how long.
 
+### general.cache.folder `(Default = "cache")`
+This tells webperf-core what foldername to use for cache.
+This take no effect unless `general.cache.use` is set to `true`.
+
+
 ### general.cache.max-age `(Default = 60 minutes)`
 This tells webperf-core how long to use cached resources in minutes.
 This take no effect unless `general.cache.use` is set to `true`.
@@ -155,11 +160,6 @@ Please also see csp-generate-strict-recommended-hashes and tests.http.csp-genera
 Tells HTTP test to only download javascript resources one more time after visiting website to generate sha256 hashes.
 Please also see csp-generate-strict-recommended-hashes and tests.http.csp-generate-hashes.
 
-### tests.lighthouse.disable-sandbox `(Default = false)`
-
-This variable tells lighthouse based test(s) to disable chrome sandbox or not.
-This is needed when using it in our docker image (IF not used in interactive mode).
-
 ### tests.sitespeed.docker.use `(Default = false)`
 
 This variable tells sitespeed based test(s) to use docker image version instead of NPM version.
@@ -176,6 +176,10 @@ This variable tells sitespeed based test(s) how long it should wait for a url to
 Setting this to a lower value may improve overall test speed if many urls are being tested and
 it is not important if one or two tests fail.
 Please read more about this on [SiteSpeed test section](tests/sitespeed.md).
+
+### tests.sitespeed.mobile `(Default = false)`
+
+This variable tells sitespeed based test(s) to simulate mobile browser.
 
 ### tests.sitespeed.xvfb `(Default = false)`
 

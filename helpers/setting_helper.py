@@ -60,13 +60,13 @@ config_mapping = {
         "css_review_group_errors",
         "CSS_REVIEW_GROUP_ERRORS"): "bool|tests.css.group",
     (
-        "disable-sandbox",
-        "tests.lighthouse.disable-sandbox"): "bool|tests.lighthouse.disable-sandbox",
-    (
         "sitespeeddocker",
         "tests.sitespeed.docker.use",
         "sitespeed_use_docker",
         "SITESPEED_USE_DOCKER"): "bool|tests.sitespeed.docker.use",
+    (
+        "mobile",
+        "tests.sitespeed.mobile"): "bool|tests.sitespeed.mobile",
     (
         "sitespeedtimeout",
         "tests.sitespeed.timeout",
@@ -82,7 +82,8 @@ config_mapping = {
         "tests.sitespeed.xvfb"): "bool|tests.sitespeed.xvfb",
     (
         "sitespeedcustomcache",
-        "tests.sitespeed.cache.folder"): "string|tests.sitespeed.cache.folder",
+        "general.cache.folder",
+        "tests.sitespeed.cache.folder"): "string|general.cache.folder",
     (
         "csponly",
         "tests.http.csp-only",
