@@ -48636,12 +48636,12 @@
             "type": "wordpress-plugin",
             "last_pushed_year": "2024",
             "versions": {
+                "1.2.4": [],
                 "1.2.3": [],
                 "1.2.2": [],
                 "1.2.1": []
             },
-            "archived": false,
-            "notice": "Warning! This plugin hasn't been tested with the latest 3 major releases of WordPress. It may no longer be maintained or supported and may have compatibility issues when used with more recent versions of WordPress."
+            "archived": false
         },
         "verge": {
             "github-owner": "ryanve",
