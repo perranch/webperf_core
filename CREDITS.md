@@ -9,6 +9,7 @@ Contributors:
 - [dependabot[bot]](https://github.com/apps/dependabot)
 - [flowertwig-org](https://github.com/flowertwig-org)
 - [krompaco](https://github.com/krompaco)
+- [aze2099](https://github.com/aze2099)
 - [linulas](https://github.com/linulas)
 - [perlan](https://github.com/perlan)
 - [puggan](https://github.com/puggan)
@@ -17,12 +18,18 @@ Contributors:
 
 ## Projects we depend on:
 
+### [html-validate](https://www.npmjs.com/package/html-validate)
+License: MIT
+
 ### [pa11y](https://www.npmjs.com/package/pa11y)
 Usage: Used in Accessibility (Pa11y) Test
 License: LGPL-3.0
 
 ### [sitespeed.io](https://www.npmjs.com/package/sitespeed.io)
 Usage: Used in the background in most cases where we need to visit website as browser
+License: MIT
+
+### [stylelint](https://www.npmjs.com/package/stylelint)
 License: MIT
 
 ### [eslint](https://www.npmjs.com/package/eslint)
