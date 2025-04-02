@@ -12,9 +12,10 @@ from PIL import Image
 # https://docs.python.org/3/library/urllib.parse.html
 import packaging.version
 from helpers.models import Rating, DefaultInfo
+from helpers.browser_helper import get_chromium_browser
+from helpers.setting_helper import get_config
 from tests.sitespeed_base import get_result
 from tests.utils import get_http_content, get_translation, is_file_older_than
-from helpers.setting_helper import get_config
 
 # Debug flags for every category here,
 # this so we can print out raw values (so we can add more allowed once)
@@ -70,7 +71,7 @@ def get_rating_from_sitespeed(url, local_translation, global_translation):
         '--utc true '
         f'-n {sitespeed_iterations}')
 
-    if 'firefox' in get_config('tests.software.browser'):
+    if 'firefox' in get_config('tests.sitespeed.browser'):
         sitespeed_arg = (
             '-b firefox '
             '--firefox.includeResponseBodies all '
@@ -81,7 +82,7 @@ def get_rating_from_sitespeed(url, local_translation, global_translation):
             f'{sitespeed_arg}')
     else:
         sitespeed_arg = (
-            '-b chrome '
+            f'-b {get_chromium_browser()} '
             '--chrome.cdp.performance false '
             '--browsertime.chrome.timeline false '
             '--browsertime.chrome.includeResponseBodies all '
@@ -1211,6 +1212,9 @@ def identify_software(filename, origin_domain, rules):
         lookup_cookies(
             data[0], global_cookies, rules)
 
+    if global_software is None:
+        return data
+
     for software_name in global_software.keys():
         versions = global_software[software_name]
         if len(versions) == 0:
@@ -1226,9 +1230,13 @@ def cleanup_duplicates(item):
     item['matches'] = list(set(item['matches']))
 
 def cleanup_used_global_software(global_software, item):
+    if global_software is None:
+        return
+
     for match in item['matches']:
         if match['name'] in global_software and match['version'] in global_software[match['name']]:
             global_software[match['name']].remove(match['version'])
+
 
 
 def lookup_response_mimetype(item, response_mimetype):
